@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables and secrets
+*.env
+.env.*
+.env
+backend/.env
+frontend/.env
+backend/venv
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Node.js
+node_modules/
+
+# Logs
+*.log
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+
+# Test reports
+junitxml
+*.cover
+
+# Misc
+*.bak
+*.swp
+*.swo
