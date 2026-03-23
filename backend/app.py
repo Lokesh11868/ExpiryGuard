@@ -12,6 +12,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+@app.get("/")
+def health_check():
+    return {"status": "ok", "message": "ExpiryGuard Backend is running"}
 
 @app.on_event("startup")
 async def startup_event():
