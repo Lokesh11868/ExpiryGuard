@@ -34,7 +34,7 @@ graph TD
     end
 
     subgraph External ["External Services"]
-        SMTP[SMTP Email Server]
+        Brevo[Brevo Email API]
         OFF["Open Food Facts API"]
     end
 
@@ -56,8 +56,8 @@ graph TD
     OCRProcessor --> API
 
     Scheduler -->|Checks Expiry Daily| Products
-    Scheduler -->|Finds Expiring Items| SMTP
-    SMTP -->|Sends Email Alert| User
+    Scheduler -->|Finds Expiring Items| Brevo
+    Brevo -->|Sends Email Alert| User
 ```
 
 ---
@@ -91,6 +91,7 @@ graph TD
 - **Database**: MongoDB (NoSQL)
 - **LLM / AI**: Google Gemini AI (`langchain-google-genai`) for voice transcript parsing
 - **OCR Integration**: OCR.space API Integration
+- **Email Service**: Brevo (formerly Sendinblue) API
 - **Background Tasks**: Python `threading` & `schedule` for email notifications
 - **Authentication**: JWT (JSON Web Tokens) with `python-jose` and `passlib`
 
@@ -135,15 +136,12 @@ To run the project, rename `.env.example` to `.env` in the backend directory (or
 ```env
 MONGODB_URL=your-mongodb-connection-string
 JWT_SECRET=your-random-jwt-secret-key
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-EMAIL_USER=your-email-address@gmail.com
-EMAIL_PASSWORD=your-email-app-password
+EMAIL_USER=your-verified-brevo-sender@domain.com
+BREVO_API_KEY=your-brevo-api-key
+FRONTEND_URL=https://expiry-guard-gamma.vercel.app/
 OCR_SPACE_API_KEY=your-ocr-space-api-key
 GEMINI_API_KEY=your-google-gemini-api-key
 ```
-
-*Note: For Gmail, ensure you generate an "App Password" through your Google Account settings, rather than using your primary password.*
 
 ---
 

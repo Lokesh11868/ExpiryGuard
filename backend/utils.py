@@ -1,8 +1,7 @@
-import re, requests, smtplib
+import re, requests, sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 from datetime import datetime
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from config import EMAIL_USER, EMAIL_PASSWORD, SMTP_SERVER, SMTP_PORT
+from config import EMAIL_USER, BREVO_API_KEY
 
 def extract_product_info(text: str) -> dict:
     result = {"product_name": None, "expiry_date": None, "best_before_months": None}
@@ -75,15 +74,17 @@ def local_log(message):
 
 def send_email_alert(user_email: str, products: list):
     local_log(f"Starting alert for {user_email} (Products: {len(products)})")
-    # DEBUG PRINT to terminal
-    print(f"\n[DEBUG] {datetime.now()} - SENDING UPDATED HTML EMAIL to {user_email}\n")
+    if not BREVO_API_KEY:
+        local_log("ERROR: BREVO_API_KEY not found in configuration.")
+        return False
+    
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = BREVO_API_KEY
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
     
     try:
-        msg = MIMEMultipart('alternative')
-        msg['From'] = EMAIL_USER
-        msg['To'] = user_email
         time_mark = datetime.now().strftime('%H:%M:%S')
-        msg['Subject'] = f"ExpiryGuard Update [{time_mark}] - Product Expiry Alert"
+        subject = f"ExpiryGuard Update [{time_mark}] - Product Expiry Alert"
 
         # Separate products into Expired and Near Expiry
         expired_products_html = []
@@ -114,7 +115,7 @@ def send_email_alert(user_email: str, products: list):
         if near_expiry_products_text:
             text_body += "NEAR EXPIRY:\n" + "\n".join(near_expiry_products_text) + "\n\n"
             text_body += "Recommendation: Please try to consume these items soon!\n\n"
-        text_body += "View your dashboard at: http://localhost:5173\n"
+        text_body += f"View your dashboard at: {FRONTEND_URL}\n"
 
         # Build HTML Body
         html_body = f"""
@@ -147,7 +148,7 @@ def send_email_alert(user_email: str, products: list):
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
                 <p>Check your full inventory and manage items on our website:</p>
                 <div style="text-align: center; margin: 20px 0;">
-                    <a href="http://localhost:5173" style="background-color: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Go to ExpiryGuard Dashboard</a>
+                    <a href="{FRONTEND_URL}" style="background-color: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Go to ExpiryGuard Dashboard</a>
                 </div>
                 <p style="font-size: 0.8em; color: #777;">Thank you for using ExpiryGuard to reduce food waste!</p>
             </div>
@@ -155,20 +156,24 @@ def send_email_alert(user_email: str, products: list):
         </html>
         """
 
-        msg.attach(MIMEText(text_body, 'plain'))
-        msg.attach(MIMEText(html_body, 'html'))
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": user_email}],
+            sender={"email": EMAIL_USER, "name": "ExpiryGuard"},
+            subject=subject,
+            html_content=html_body,
+            text_content=text_body
+        )
         
-        local_log("Connecting to SMTP server...")
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15)
-        server.starttls()
-        server.login(EMAIL_USER, EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        
-        local_log("Alert sent successfully!")
+        local_log("Sending email via Brevo API...")
+        api_response = api_instance.send_transac_email(send_smtp_email)
+        local_log(f"Brevo Response: {api_response}")
+        local_log("Alert sent successfully via Brevo!")
         return True
+    except ApiException as e:
+        local_log(f"Brevo email sending failed: {e}")
+        return False
     except Exception as e:
-        local_log(f"Email sending failed: {e}")
+        local_log(f"An unexpected error occurred: {e}")
         return False
 
 def get_product_from_open_facts(barcode):
@@ -249,4 +254,5 @@ def notifications_enabled(user_id=None) -> bool:
     if user_id:
         user = users_collection.find_one({"_id": ObjectId(user_id) if isinstance(user_id, str) else user_id})
         return user.get("notifications_enabled", True) if user else False
+    return True
     return True
