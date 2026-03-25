@@ -1,7 +1,7 @@
 import re, requests, sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 from datetime import datetime
-from config import EMAIL_USER, BREVO_API_KEY
+from config import EMAIL_USER, BREVO_API_KEY, FRONTEND_URL
 
 def extract_product_info(text: str) -> dict:
     result = {"product_name": None, "expiry_date": None, "best_before_months": None}
